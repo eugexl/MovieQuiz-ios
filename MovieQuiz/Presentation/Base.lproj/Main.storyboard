@@ -3,7 +3,7 @@
     <device id="retina5_9" orientation="portrait" appearance="dark"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21678"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21679"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -97,6 +97,9 @@
                                     </stackView>
                                 </subviews>
                             </stackView>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="medium" translatesAutoresizingMaskIntoConstraints="NO" id="zll-6f-NR9" userLabel="ActivityIndicator">
+                                <rect key="frame" x="177.66666666666666" y="396" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="YP Black"/>
@@ -104,10 +107,13 @@
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="bottom" secondItem="FfI-Zi-yXC" secondAttribute="bottom" id="Op4-R4-wM2"/>
                             <constraint firstItem="FfI-Zi-yXC" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="10" id="T69-Vn-aJp"/>
                             <constraint firstItem="FfI-Zi-yXC" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="20" id="U8U-Qk-dfZ"/>
+                            <constraint firstItem="zll-6f-NR9" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="cyB-PX-J2w"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="FfI-Zi-yXC" secondAttribute="trailing" constant="20" id="eYl-oN-Tyo"/>
+                            <constraint firstItem="zll-6f-NR9" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="qMW-nh-KR4"/>
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="activityIndicator" destination="zll-6f-NR9" id="wfG-kk-IKZ"/>
                         <outlet property="mainImageView" destination="wMO-Ed-I62" id="K6k-HN-fLm"/>
                         <outlet property="noButton" destination="nPo-pm-Imi" id="ln1-zN-JAQ"/>
                         <outlet property="questionIndexLabel" destination="Ee4-FE-HZS" id="ea8-a7-aGd"/>

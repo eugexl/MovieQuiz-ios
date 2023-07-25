@@ -9,11 +9,11 @@ import Foundation
 
 /// Структура вопроса
 /// - Parameters:
-///     - image: Наименование используемого файла
+///     - image: Данные изображения
 ///     - text: Текст вопроса
 ///     - correctAnswer: Верный Ответ на вопрос
 struct QuizQuestion {
-    let image: String
+    let image: Data
     let text: String
     let correctAnswer: Bool
 }

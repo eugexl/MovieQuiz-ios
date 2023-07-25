@@ -1,5 +1,5 @@
 //
-// Sprint 05 branch
+// Sprint 06 Branch
 //
 
 import UIKit
@@ -17,6 +17,7 @@ final class MovieQuizViewController: UIViewController{
     @IBOutlet private weak var questionLabel: UILabel!
     @IBOutlet private weak var noButton: UIButton!
     @IBOutlet private weak var yesButton: UIButton!
+    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
     /// Фабрика вопросов
     private var questionFactory: QuestionFactoryProtocol?
@@ -46,11 +47,11 @@ final class MovieQuizViewController: UIViewController{
         someMakeup()
         
         // Обеспечение зависимостей
-        questionFactory = QuestionFactory(delegate: self)
+        questionFactory = QuestionFactory(delegate: self) // Тут же, при инициализации загружаем данные о фильмах с сервера IMDB
         alertPresenter = AlertPresenter(delegate: self)
         
-        // Получаем/отображаем первый вопрос квиза
-        questionFactory?.requestNextQuestion()
+        // Запускаем Activity indicator
+        showLoadingIndicator(is: true)
     }
     
     // MARK: - IBActions
@@ -79,7 +80,7 @@ final class MovieQuizViewController: UIViewController{
     /// - Returns: Возвращает структуру "QuizStepViewModel" для отображения вопроса в представлении
     private func convert(question: QuizQuestion) -> QuizStepViewModel {
         return QuizStepViewModel(
-            image: UIImage(named: question.image) ?? UIImage(),
+            image: UIImage(data: question.image) ?? UIImage(),
             question: question.text,
             questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
         )
@@ -165,6 +166,30 @@ final class MovieQuizViewController: UIViewController{
         mainImageView.layer.masksToBounds = true
         mainImageView.layer.borderWidth = 8     // В соответствии с Figma-моделью
         mainImageView.layer.cornerRadius = 20   // В соответствии с Figma-моделью
+        
+        activityIndicator.hidesWhenStopped = true
+    }
+    
+    /// Прячем/отображаем индикатор активности
+    ///
+    private func showLoadingIndicator(is displayed: Bool){
+        if displayed {
+            activityIndicator.startAnimating()
+        } else {
+            DispatchQueue.main.async {
+                self.activityIndicator.stopAnimating()
+            }
+        }
+    }
+    
+    /// Отображаем уведомление о возникновении ошибки на уровне сети
+    ///
+    private func showNetworkError(message: String){
+        showLoadingIndicator(is: false)
+        let alertModel = AlertModel(title: "Ошибка", message: "При загрузке данных возникла ошибка", buttonText: "Попробовать ещё раз" ) { _ in
+            self.questionFactory?.loadData()
+        }
+        alertPresenter?.alert(with: alertModel)
     }
 }
 
@@ -186,6 +211,13 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.show(quizStep: viewModel)
         }
+    }
+    func didLoadDataFromServer(){
+        showLoadingIndicator(is: false)
+        questionFactory?.requestNextQuestion()
+    }
+    func didFailToLoadData(with error: Error) {
+        showNetworkError(message: error.localizedDescription)
     }
 }
 
