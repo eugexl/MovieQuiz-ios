@@ -32,14 +32,12 @@ final class AlertPresenter: AlertPresenterProtocol {
 }
 
 // MARK: - AlertPresenterProtocol
-///
 protocol AlertPresenterProtocol {
     var delegate: AlertPresenterDelegate? { get }
     func alert(with model: AlertModel)
 }
 
 // MARK: - AlertPresenterDelegate
-///
 protocol AlertPresenterDelegate: UIViewController {
     func startNewQuiz(_: UIAlertAction)
 }

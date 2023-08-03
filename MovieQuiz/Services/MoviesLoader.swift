@@ -11,7 +11,7 @@ protocol MoviesLoaderProtocol {
     func loadMovies(handler: @escaping (Result<MostPopularMovies, Error>) -> Void)
 }
 
-///
+/// Структура выполняющая загрузку, декодирование данных о фильмах
 struct MoviesLoader: MoviesLoaderProtocol {
     
     private let networkClient = NetworkClient()
@@ -32,13 +32,19 @@ struct MoviesLoader: MoviesLoaderProtocol {
             case .success(let data):
                 do {
                     let moviesHeap = try JSONDecoder().decode(MostPopularMovies.self, from: data)
+                    if moviesHeap.items.count == 0 {
+                        if !moviesHeap.errorMessage.isEmpty {
+                            print(moviesHeap.errorMessage)
+                        }
+                        throw NetworkClient.NetworkError.noData
+                    }
                     handler(.success(moviesHeap))
                 } catch {
                     handler(.failure(error))
                 }
+                
             case .failure(let error):
                 handler(.failure(error))
-                print(error)
             }
         }
     }

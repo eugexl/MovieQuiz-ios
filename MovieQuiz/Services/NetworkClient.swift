@@ -7,18 +7,33 @@
 
 import Foundation
 
+// MARK: - Network Client
+/// Структура выполняющая сетевые операции для приложения
 struct NetworkClient {
     
     /// IMDB API KEY
     enum imdbAPIKey: String {
-        case ypImdbApiKey = "k_zcuw1ytf"    // YP IMDB API KEY
-        case myImdbApiKey = "k_4w3gz813"    // MY IMDB API KEY
+        case myImdbApiKey = "k_4w3gz813"
+        case ypImdbApiKey = "k_zcuw1ytf"
+        case testImdbApiKey = "k_12345678"
     }
     
     /// Возможные ошибки сетевого уровня
-    private enum NetworkError: Error{
+    enum NetworkError: Error, LocalizedError{
         case codeError
         case wrongData
+        case noData
+        
+        var errorDescription: String? {
+            switch self {
+            case .codeError:
+                return NSLocalizedString("Не получилось декодировать данные", comment: "Проблема с кодированием")
+            case .wrongData:
+                return NSLocalizedString("Сервер вернул некорректные данные", comment: "Неверные данные")
+            case .noData:
+                return NSLocalizedString("Сервер не предоставил даннных", comment: "Нет данных")
+            }
+        }
     }
     
     /// Запрашиваем данные с сервера

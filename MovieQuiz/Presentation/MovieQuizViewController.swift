@@ -33,7 +33,7 @@ final class MovieQuizViewController: UIViewController{
     private let statisticService: StatisticService = StatisticServiceImplementation()
     
     /// Фабрика уведомлений
-    private var alertPresenter: AlertPresenterProtocol?
+    internal var alertPresenter: AlertPresenterProtocol?
     
     // Окрашиваем статусную панель в светлые тона
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -47,7 +47,7 @@ final class MovieQuizViewController: UIViewController{
         someMakeup()
         
         // Обеспечение зависимостей
-        questionFactory = QuestionFactory(delegate: self) // Тут же, при инициализации загружаем данные о фильмах с сервера IMDB
+        questionFactory = QuestionFactory(delegate: self)
         alertPresenter = AlertPresenter(delegate: self)
         
         // Запускаем Activity indicator
@@ -92,11 +92,14 @@ final class MovieQuizViewController: UIViewController{
     ///
     private func show(quizStep model: QuizStepViewModel){
         
-        mainImageView.layer.borderColor = UIColor.clear.cgColor // Убираем окраску рамки изображения
-        questionIndexLabel.text = model.questionNumber          // Адаптируем интерфейс под новый вопрос
+        // Убираем окраску рамки изображения
+        mainImageView.layer.borderColor = UIColor.clear.cgColor
+        // Адаптируем интерфейс под новый вопрос
+        questionIndexLabel.text = model.questionNumber
         mainImageView.image = model.image
         questionLabel.text = model.question
-        toggleButtons(to: true)                                 // Включаем кнопки
+        // Включаем кнопки
+        toggleButtons(to: true)
     }
     
     /// Метод включающий/выключающий кнопки ответов
@@ -115,11 +118,13 @@ final class MovieQuizViewController: UIViewController{
         // Окрашиваем рамку картинки вопроса в соответствии с правильностью ответа
         mainImageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
         
-        if isCorrect {  // Если ответ верный инкриментируем счётчик верных ответов
+        // Если ответ верный инкриментируем счётчик верных ответов
+        if isCorrect {
             correctAnswers += 1
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1){ [weak self] in     // Пауза перед следующим вопросом
+        // Пауза перед следующим вопросом
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1){ [weak self] in
             self?.showNextQuestionOrResults()
         }
     }
@@ -127,8 +132,8 @@ final class MovieQuizViewController: UIViewController{
     /// Отображение следующего вопроса или результатов
     private func showNextQuestionOrResults(){
        
-        // Если предыдущий вопрос был последним
-        if currentQuestionIndex == questionsAmount - 1 {    // Подводим итог текущей игры
+        // Если предыдущий вопрос был последним подводим итог текущей игры
+        if currentQuestionIndex == questionsAmount - 1 {
             
             let totalQuestions = currentQuestionIndex + 1
             statisticService.store(correct: correctAnswers, total: totalQuestions)
@@ -143,17 +148,19 @@ final class MovieQuizViewController: UIViewController{
             """
             let alertModel = AlertModel(title: "Этот раунд окончен!", message: text, buttonText: "Сыграть ещё раз", completion: startNewQuiz)
             
-            alertPresenter?.alert(with: alertModel)     // Отображаем уведомление
+            // Отображаем уведомление
+            alertPresenter?.alert(with: alertModel)
             
         // Иначе переходим к следующему вопросу
         } else {
-            currentQuestionIndex += 1                   // Инкриментируем счётчик текущего вопроса
-            questionFactory?.requestNextQuestion()      // Посылаем запрос на вопрос на фабрику вопросов
+            // Инкриментируем счётчик текущего вопроса
+            currentQuestionIndex += 1
+            // Посылаем запрос на вопрос на фабрику вопросов
+            questionFactory?.requestNextQuestion()
         }
     }
     
     /// Настраиваем параметры представления
-    ///
     private func someMakeup(){
         
         // У меня Xcode (14.3) не отображает установленные шрифты в списке шрифтов. Перепробовал всё, что рекомендовалось, поэтому ...
@@ -164,15 +171,16 @@ final class MovieQuizViewController: UIViewController{
         yesButton.titleLabel?.font = UIFont(name: "YSDisplay-Medium", size: 20)
         
         mainImageView.layer.masksToBounds = true
-        mainImageView.layer.borderWidth = 8     // В соответствии с Figma-моделью
-        mainImageView.layer.cornerRadius = 20   // В соответствии с Figma-моделью
+        
+        // В соответствии с Figma-моделью
+        mainImageView.layer.borderWidth = 8
+        mainImageView.layer.cornerRadius = 20
         
         activityIndicator.hidesWhenStopped = true
     }
     
     /// Прячем/отображаем индикатор активности
-    ///
-    private func showLoadingIndicator(is displayed: Bool){
+    internal func showLoadingIndicator(is displayed: Bool){
         if displayed {
             activityIndicator.startAnimating()
         } else {
@@ -183,11 +191,14 @@ final class MovieQuizViewController: UIViewController{
     }
     
     /// Отображаем уведомление о возникновении ошибки на уровне сети
-    ///
     private func showNetworkError(message: String){
         showLoadingIndicator(is: false)
-        let alertModel = AlertModel(title: "Ошибка", message: "При загрузке данных возникла ошибка", buttonText: "Попробовать ещё раз" ) { _ in
-            self.questionFactory?.loadData()
+        
+        let messageText = message.isEmpty ? "При загрузке данных возникла ошибка" : message
+        
+        let alertModel = AlertModel(title: "Ошибка", message: messageText, buttonText: "Попробовать ещё раз" ) { [weak self] _ in
+            
+            self?.questionFactory?.loadData()
         }
         alertPresenter?.alert(with: alertModel)
     }

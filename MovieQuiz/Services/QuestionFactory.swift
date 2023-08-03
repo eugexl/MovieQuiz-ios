@@ -8,6 +8,7 @@
 import Foundation
 
 // MARK: - Фабрика вопросов
+
 final class QuestionFactory: QuestionFactoryProtocol {
     
     /// Делегат - получатель Квиз-вопросов
@@ -34,11 +35,23 @@ final class QuestionFactory: QuestionFactoryProtocol {
             guard let movie = self.movies[safe: index] else { return }
             
             var imageData = Data()
-            
             do {
+                
+                // Пытаемся получить изображение из сети по ссылке
                 imageData = try Data(contentsOf: movie.resizedImageURL)
+                
             } catch {
+                
+               // В случае неудачи пробуем задать вопрос с картинкой по другому фильму
                 print("Failed to load image data")
+                DispatchQueue.main.async {
+                    let alertModel = AlertModel(title: "Ошибка", message: "Не удалось загрузить изображение", buttonText: "Повторить") { _ in
+                        
+                        self.requestNextQuestion()
+                    }
+                    self.delegate?.alertPresenter?.alert(with: alertModel)
+                }
+                return
             }
             
             let rating = Float(movie.rating) ?? 0
@@ -59,6 +72,9 @@ final class QuestionFactory: QuestionFactoryProtocol {
         
         let moviesLoader = MoviesLoader()
         
+        // Запускаем Activity indicator
+        delegate?.showLoadingIndicator(is: true)
+        
         moviesLoader.loadMovies { [weak self] result in
             DispatchQueue.main.async {
                 guard let self = self else { return }
@@ -72,21 +88,22 @@ final class QuestionFactory: QuestionFactoryProtocol {
                 }
             }
         }
-        
     }
 }
 
 // MARK: - QuestionFactoryProtocol
-//
+
 protocol QuestionFactoryProtocol {
     func requestNextQuestion()
     func loadData()
 }
 
 // MARK: - QuestionFactoryDelegate
-//
+
 protocol QuestionFactoryDelegate: AnyObject {
+    var alertPresenter: AlertPresenterProtocol? { get }
     func didReceiveNextQuestion(question: QuizQuestion?)
     func didLoadDataFromServer()
     func didFailToLoadData(with error: Error)
+    func showLoadingIndicator(is: Bool)
 }

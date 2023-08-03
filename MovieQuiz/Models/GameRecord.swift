@@ -7,6 +7,10 @@
 
 import Foundation
 
+/// Параметры игры
+/// - Parameters:
+///     - correct: количество верных ответов за квиз
+/// - total: общее количество вопрос 
 struct GameRecord: Codable {
     let correct: Int
     let total: Int
@@ -14,7 +18,7 @@ struct GameRecord: Codable {
 }
 
 extension GameRecord: Comparable {
-    static func < (lhs: GameRecord, rhs: GameRecord) -> Bool{
+    static func < (lhs: GameRecord, rhs: GameRecord) -> Bool {
         return lhs.correct < rhs.correct
     }
 }
