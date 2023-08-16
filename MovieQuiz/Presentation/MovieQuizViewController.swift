@@ -23,15 +23,16 @@ final class MovieQuizViewController: UIViewController{
     private var questionFactory: QuestionFactoryProtocol?
     /// Текущий вопрос
     private var currentQuestion: QuizQuestion?
-    /// Количество вопросов в игре
-    private let questionsAmount: Int = 10
-    /// Индекс текущего вопроса
-    private var currentQuestionIndex = 0
+//    /// Количество вопросов в игре
+//    private let questionsAmount: Int = 10
+//    /// Индекс текущего вопроса
+//    private var currentQuestionIndex = 0
     /// Количество правильных ответов
     private var correctAnswers = 0
+    /// Презентер из MVP
+    private var presenter = MovieQuizPresenter()
     /// Сервис подсчёта, обработки результатов квиза
     private let statisticService: StatisticService = StatisticServiceImplementation()
-    
     /// Фабрика уведомлений
     internal var alertPresenter: AlertPresenterProtocol?
     
@@ -74,17 +75,7 @@ final class MovieQuizViewController: UIViewController{
     
     // MARK: - Private functions
     
-    /// Подготовка вопроса к визуализации
-    /// - Parameters:
-    ///     - question: QuizQuestion-структура
-    /// - Returns: Возвращает структуру "QuizStepViewModel" для отображения вопроса в представлении
-    private func convert(question: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: question.image) ?? UIImage(),
-            question: question.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        )
-    }
+    
     
     /// Смена декораций представления/view
     ///  - Parameters:
@@ -133,9 +124,9 @@ final class MovieQuizViewController: UIViewController{
     private func showNextQuestionOrResults(){
        
         // Если предыдущий вопрос был последним подводим итог текущей игры
-        if currentQuestionIndex == questionsAmount - 1 {
+        if presenter.isLastQuestion() {
             
-            let totalQuestions = currentQuestionIndex + 1
+            let totalQuestions = presenter.currentQuestionIndex + 1
             statisticService.store(correct: correctAnswers, total: totalQuestions)
             
             // Подготавливаем уведомление
@@ -154,7 +145,7 @@ final class MovieQuizViewController: UIViewController{
         // Иначе переходим к следующему вопросу
         } else {
             // Инкриментируем счётчик текущего вопроса
-            currentQuestionIndex += 1
+            presenter.switchToNextQuestion()
             // Посылаем запрос на вопрос на фабрику вопросов
             questionFactory?.requestNextQuestion()
         }
@@ -217,7 +208,7 @@ extension MovieQuizViewController: QuestionFactoryDelegate {
         
         currentQuestion = question
         
-        let viewModel = convert(question: question)
+        let viewModel = presenter.convert(question: question)
         
         DispatchQueue.main.async { [weak self] in
             self?.show(quizStep: viewModel)
@@ -239,7 +230,7 @@ extension MovieQuizViewController: AlertPresenterDelegate {
     /// Функция для инициализации квиз-раунда
     internal func startNewQuiz( _ : UIAlertAction){
         
-        self.currentQuestionIndex = 0
+        self.presenter.resetQuestionIndex()
         self.correctAnswers = 0
         self.questionFactory?.requestNextQuestion()
     }

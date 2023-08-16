@@ -14,7 +14,11 @@ protocol MoviesLoaderProtocol {
 /// Структура выполняющая загрузку, декодирование данных о фильмах
 struct MoviesLoader: MoviesLoaderProtocol {
     
-    private let networkClient = NetworkClient()
+    private let networkClient: NetworkRouting
+    
+    init(networkClient: NetworkRouting = NetworkClient()) {
+        self.networkClient = networkClient
+    }
    
     /// Формируем URL HTTPS-запроса
     private var mostPopularMoviesURL: URL {
@@ -31,6 +35,7 @@ struct MoviesLoader: MoviesLoaderProtocol {
                 
             case .success(let data):
                 do {
+                    
                     let moviesHeap = try JSONDecoder().decode(MostPopularMovies.self, from: data)
                     if moviesHeap.items.count == 0 {
                         if !moviesHeap.errorMessage.isEmpty {
