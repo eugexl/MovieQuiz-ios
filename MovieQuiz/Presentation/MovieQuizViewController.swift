@@ -4,9 +4,18 @@
 
 import UIKit
 
+// MARK: - MovieQuizViewController Class Protocol
+protocol MovieQuizViewControllerProtocol: AnyObject {
+    
+    func show(quizStep model: QuizStepViewModel)
+    func show(alert model: AlertModel)
+    func toggleButtons(to state: Bool)
+    func highlightImageBorder(isCorrectAnswer: Bool)
+    func showLoadingIndicator(is state: Bool)
+}
+
 // MARK: - MovieQuizViewController Class
-///
-final class MovieQuizViewController: UIViewController{
+final class MovieQuizViewController: UIViewController {
     
     // MARK: - Properties
     
@@ -19,21 +28,10 @@ final class MovieQuizViewController: UIViewController{
     @IBOutlet private weak var yesButton: UIButton!
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
-    /// Фабрика вопросов
-    private var questionFactory: QuestionFactoryProtocol?
-    /// Текущий вопрос
-    private var currentQuestion: QuizQuestion?
-    /// Количество вопросов в игре
-    private let questionsAmount: Int = 10
-    /// Индекс текущего вопроса
-    private var currentQuestionIndex = 0
-    /// Количество правильных ответов
-    private var correctAnswers = 0
-    /// Сервис подсчёта, обработки результатов квиза
-    private let statisticService: StatisticService = StatisticServiceImplementation()
-    
+    /// Презентер из MVP
+    private var presenter: MovieQuizPresenterProtocol?
     /// Фабрика уведомлений
-    internal var alertPresenter: AlertPresenterProtocol?
+    private var alertPresenter: AlertPresenterProtocol?
     
     // Окрашиваем статусную панель в светлые тона
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -41,17 +39,16 @@ final class MovieQuizViewController: UIViewController{
     }
     
     // MARK: - Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Настройка внешнего вида пользовательского интерфейса
         someMakeup()
         
-        // Обеспечение зависимостей
-        questionFactory = QuestionFactory(delegate: self)
+        // Формирование зависимостей
         alertPresenter = AlertPresenter(delegate: self)
-        
-        // Запускаем Activity indicator
-        showLoadingIndicator(is: true)
+        presenter = MovieQuizPresenter(viewController: self)
     }
     
     // MARK: - IBActions
@@ -59,111 +56,20 @@ final class MovieQuizViewController: UIViewController{
     /// Метод вызываемый по нажатию кнопки Нет
     @IBAction private func noButtonClicked(_ sender: UIButton){
         // Вызываем реакцию приложения на отрицательный ответ пользователя
-        toggleButtons(to: false)
-        guard let currentQuestion = currentQuestion else { return }
-        showAnswerResult(isCorrect: currentQuestion.correctAnswer == false)
+        presenter?.didAnswer(isYes: false)
     }
     
     /// Метод вызываемый по нажатию кнопки Да
     @IBAction private func yesButtonClicked(_ sender: UIButton){
         // Вызываем реакцию приложения на утвердительных ответ пользователя
-        toggleButtons(to: false)
-        guard let currentQuestion = currentQuestion else { return }
-        showAnswerResult(isCorrect: currentQuestion.correctAnswer == true)
+        presenter?.didAnswer(isYes: true)
     }
     
-    // MARK: - Private functions
+    // MARK: - Private methods
     
-    /// Подготовка вопроса к визуализации
-    /// - Parameters:
-    ///     - question: QuizQuestion-структура
-    /// - Returns: Возвращает структуру "QuizStepViewModel" для отображения вопроса в представлении
-    private func convert(question: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: question.image) ?? UIImage(),
-            question: question.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        )
-    }
-    
-    /// Смена декораций представления/view
-    ///  - Parameters:
-    ///     - quizStep: QuizStepViewModel-структура, содержащая необходимые элементы для обновления представления
-    ///
-    private func show(quizStep model: QuizStepViewModel){
-        
-        // Убираем окраску рамки изображения
-        mainImageView.layer.borderColor = UIColor.clear.cgColor
-        // Адаптируем интерфейс под новый вопрос
-        questionIndexLabel.text = model.questionNumber
-        mainImageView.image = model.image
-        questionLabel.text = model.question
-        // Включаем кнопки
-        toggleButtons(to: true)
-    }
-    
-    /// Метод включающий/выключающий кнопки ответов
-    ///  - Parameters:
-    ///     - to: Состояние в которое переводится свойство кнопок isEnabled, true - включаем кнопки, false - отключаем
-    private func toggleButtons(to state: Bool){
-        noButton.isEnabled = state
-        yesButton.isEnabled = state
-    }
-   
-    /// Реагируем на ответ пользователя (нажатие кнопки ответа) - окрашиваем рамку картинки, переходим к следующему вопросу
-    /// - Parameters:
-    ///     - isCorrect: индикатор верности ответа
-    private func showAnswerResult(isCorrect: Bool){
-        
-        // Окрашиваем рамку картинки вопроса в соответствии с правильностью ответа
-        mainImageView.layer.borderColor = isCorrect ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-        
-        // Если ответ верный инкриментируем счётчик верных ответов
-        if isCorrect {
-            correctAnswers += 1
-        }
-        
-        // Пауза перед следующим вопросом
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1){ [weak self] in
-            self?.showNextQuestionOrResults()
-        }
-    }
-    
-    /// Отображение следующего вопроса или результатов
-    private func showNextQuestionOrResults(){
-       
-        // Если предыдущий вопрос был последним подводим итог текущей игры
-        if currentQuestionIndex == questionsAmount - 1 {
-            
-            let totalQuestions = currentQuestionIndex + 1
-            statisticService.store(correct: correctAnswers, total: totalQuestions)
-            
-            // Подготавливаем уведомление
-            let bestGame = statisticService.bestGame
-            let text = """
-                Ваш результат: \(correctAnswers)/\(totalQuestions)
-                Количество сыгранных квизов: \(statisticService.gamesCount)
-                Рекорд: \(bestGame.correct)/\(bestGame.total) (\(bestGame.date.dateTimeString))
-                Средняя точность: \(String(format: "%.2f", statisticService.accuracy))%
-            """
-            let alertModel = AlertModel(title: "Этот раунд окончен!", message: text, buttonText: "Сыграть ещё раз", completion: startNewQuiz)
-            
-            // Отображаем уведомление
-            alertPresenter?.alert(with: alertModel)
-            
-        // Иначе переходим к следующему вопросу
-        } else {
-            // Инкриментируем счётчик текущего вопроса
-            currentQuestionIndex += 1
-            // Посылаем запрос на вопрос на фабрику вопросов
-            questionFactory?.requestNextQuestion()
-        }
-    }
-    
-    /// Настраиваем параметры представления
+    /// Настраиваем первоначальные параметры представления
     private func someMakeup(){
         
-        // У меня Xcode (14.3) не отображает установленные шрифты в списке шрифтов. Перепробовал всё, что рекомендовалось, поэтому ...
         questionTitleLabel.font = UIFont(name: "YSDisplay-Medium", size: 20)
         questionIndexLabel.font = UIFont(name: "YSDisplay-Medium", size: 20)
         questionLabel.font = UIFont(name: "YSDisplay-Bold", size: 23)
@@ -178,69 +84,58 @@ final class MovieQuizViewController: UIViewController{
         
         activityIndicator.hidesWhenStopped = true
     }
+}
+
+// MARK: - MovieQuizViewControllerProtocol Methods
+
+extension MovieQuizViewController: MovieQuizViewControllerProtocol {
+    
+    /// Смена декораций представления/view
+    ///  - Parameters:
+    ///     - quizStep: QuizStepViewModel-структура, содержащая необходимые элементы для обновления представления
+    ///
+    func show(quizStep model: QuizStepViewModel){
+        
+        // Убираем окраску рамки изображения
+        mainImageView.layer.borderColor = UIColor.clear.cgColor
+        
+        // Адаптируем интерфейс под новый вопрос
+        questionIndexLabel.text = model.questionNumber
+        mainImageView.image = model.image
+        questionLabel.text = model.question
+        
+        // Включаем кнопки
+        toggleButtons(to: true)
+    }
+    
+    /// Отображение уведомления/алерта
+    ///  - Parameters:
+    ///     - alert: Параметры уведомления в формате AlertModel
+    func show(alert model: AlertModel) {
+        alertPresenter?.alert(with: model)
+    }
+    
+    /// Метод включающий/выключающий кнопки ответов
+    ///  - Parameters:
+    ///     - to: Состояние в которое переводится свойство кнопок isEnabled, true - включаем кнопки, false - отключаем
+    func toggleButtons(to state: Bool){
+        noButton.isEnabled = state
+        yesButton.isEnabled = state
+    }
+    
+    /// Окрашиваем цвет рамки изображения в зависимости от верности ответа
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+        mainImageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+    }
     
     /// Прячем/отображаем индикатор активности
-    internal func showLoadingIndicator(is displayed: Bool){
-        if displayed {
+   func showLoadingIndicator(is state: Bool){
+        if state {
             activityIndicator.startAnimating()
         } else {
             DispatchQueue.main.async {
                 self.activityIndicator.stopAnimating()
             }
         }
-    }
-    
-    /// Отображаем уведомление о возникновении ошибки на уровне сети
-    private func showNetworkError(message: String){
-        showLoadingIndicator(is: false)
-        
-        let messageText = message.isEmpty ? "При загрузке данных возникла ошибка" : message
-        
-        let alertModel = AlertModel(title: "Ошибка", message: messageText, buttonText: "Попробовать ещё раз" ) { [weak self] _ in
-            
-            self?.questionFactory?.loadData()
-        }
-        alertPresenter?.alert(with: alertModel)
-    }
-}
-
-// MARK: - Extensions
-
-// MARK: - QuestionFactoryDelegate
-/// Расширение для соответствия делегату фабрики вопросов
-extension MovieQuizViewController: QuestionFactoryDelegate {
-    
-    /// Обработка Квиз-вопроса, полученного от фабрики вопросов
-    internal func didReceiveNextQuestion(question: QuizQuestion?){
-       
-        guard let question  = question else { return }
-        
-        currentQuestion = question
-        
-        let viewModel = convert(question: question)
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.show(quizStep: viewModel)
-        }
-    }
-    func didLoadDataFromServer(){
-        showLoadingIndicator(is: false)
-        questionFactory?.requestNextQuestion()
-    }
-    func didFailToLoadData(with error: Error) {
-        showNetworkError(message: error.localizedDescription)
-    }
-}
-
-// MARK: - AlertPresenterDelegate
-/// Расширение для соответствия алерт-делегату
-extension MovieQuizViewController: AlertPresenterDelegate {
-    
-    /// Функция для инициализации квиз-раунда
-    internal func startNewQuiz( _ : UIAlertAction){
-        
-        self.currentQuestionIndex = 0
-        self.correctAnswers = 0
-        self.questionFactory?.requestNextQuestion()
     }
 }

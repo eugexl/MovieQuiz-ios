@@ -7,9 +7,13 @@
 
 import Foundation
 
+protocol NetworkRouting {
+    func fetch(url: URL, handler: @escaping (Result<Data, Error>) -> Void)
+}
+
 // MARK: - Network Client
 /// Структура выполняющая сетевые операции для приложения
-struct NetworkClient {
+struct NetworkClient: NetworkRouting {
     
     /// IMDB API KEY
     enum imdbAPIKey: String {
