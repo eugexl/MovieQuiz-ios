@@ -7,7 +7,11 @@
 
 import UIKit
 
-final class MovieQuizPresenter {
+protocol MovieQuizPresenterProtocol {
+    func didAnswer(isYes: Bool)
+}
+
+final class MovieQuizPresenter: MovieQuizPresenterProtocol {
     
     /// Количество вопросов в игре
     private let questionsAmount: Int = 10
@@ -20,9 +24,9 @@ final class MovieQuizPresenter {
     /// Сервис подсчёта, обработки результатов квиза
     private let statisticService: StatisticService = StatisticServiceImplementation()
     /// Main View Controller
-    internal weak var viewController: MovieQuizViewControllerProtocol?
+    private weak var viewController: MovieQuizViewControllerProtocol?
     /// Фабрика вопросов
-     var questionFactory: QuestionFactoryProtocol?
+    private var questionFactory: QuestionFactoryProtocol?
     
     init(viewController: MovieQuizViewControllerProtocol) {
         
@@ -34,33 +38,16 @@ final class MovieQuizPresenter {
         questionFactory?.loadData()
     }
     
+    // MARK: - Private methods
+    
     /// Выясняем, является ли текущий вопрос последним в квизе
-    func isLastQuestion() -> Bool {
+    private func isLastQuestion() -> Bool {
         currentQuestionIndex == questionsAmount - 1
     }
     
     /// Инкрементируем порядковый номер текущего вопроса
-    func switchToNextQuestion() {
+    private func switchToNextQuestion() {
         currentQuestionIndex += 1
-    }
-    
-    /// Метод вызываемый по нажатию кнопок Да/Нет
-    func didAnswer(isYes: Bool) {
-        viewController?.toggleButtons(to: false)
-        guard let currentQuestion = currentQuestion else { return }
-        showAnswerResult(isCorrect: currentQuestion.correctAnswer == isYes)
-    }
-    
-    /// Подготовка вопроса к визуализации
-    /// - Parameters:
-    ///     - question: QuizQuestion-структура
-    /// - Returns: Возвращает структуру "QuizStepViewModel" для отображения вопроса в представлении
-    func convert(question: QuizQuestion) -> QuizStepViewModel {
-        return QuizStepViewModel(
-            image: UIImage(data: question.image) ?? UIImage(),
-            question: question.text,
-            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
-        )
     }
     
     /// Реагируем на ответ пользователя (нажатие кнопки ответа) - окрашиваем рамку картинки, переходим к следующему вопросу
@@ -116,12 +103,33 @@ final class MovieQuizPresenter {
         }
     }
     
+    // MARK: - Methods
+    
+    /// Метод вызываемый по нажатию кнопок Да/Нет
+    func didAnswer(isYes: Bool) {
+        viewController?.toggleButtons(to: false)
+        guard let currentQuestion = currentQuestion else { return }
+        showAnswerResult(isCorrect: currentQuestion.correctAnswer == isYes)
+    }
+    
+    /// Подготовка вопроса к визуализации
+    /// - Parameters:
+    ///     - question: QuizQuestion-структура
+    /// - Returns: Возвращает структуру "QuizStepViewModel" для отображения вопроса в представлении
+    func convert(question: QuizQuestion) -> QuizStepViewModel {
+        return QuizStepViewModel(
+            image: UIImage(data: question.image) ?? UIImage(),
+            question: question.text,
+            questionNumber: "\(currentQuestionIndex + 1)/\(questionsAmount)"
+        )
+    }
+    
     /// Функция для инициализации квиз-раунда
-    internal func startNewQuiz( _ : UIAlertAction){
+    func startNewQuiz( _ : UIAlertAction){
         
-        self.currentQuestionIndex = 0
-        self.correctAnswers = 0
-        self.questionFactory?.requestNextQuestion()
+        currentQuestionIndex = 0
+        correctAnswers = 0
+        questionFactory?.requestNextQuestion()
     }
     
 }
@@ -131,24 +139,24 @@ final class MovieQuizPresenter {
 extension MovieQuizPresenter: QuestionFactoryDelegate {
     
     /// Получили данные с сервера, запускаем квиз
-    internal func didLoadDataFromServer() {
+     func didLoadDataFromServer() {
         viewController?.showLoadingIndicator(is: false)
         questionFactory?.requestNextQuestion()
     }
     
     /// Отображаем уведомление о возникновении ошибки на уровне сети
-    internal func didFailToLoadData(alert model: AlertModel) {
+    func didFailToLoadData(alert model: AlertModel) {
         showLoadingIndicator(is: false)
         viewController?.show(alert: model)
     }
     
     /// Запускаем/отключаем индикатор активности по мере необходимости
-    internal func showLoadingIndicator(is state: Bool) {
+    func showLoadingIndicator(is state: Bool) {
         viewController?.showLoadingIndicator(is: state)
     }
     
     /// Подготовка модели и отображение нового вопроса
-    internal func didReceiveNextQuestion(question: QuizQuestion?){
+    func didReceiveNextQuestion(question: QuizQuestion?){
        
         guard let question  = question else { return }
         

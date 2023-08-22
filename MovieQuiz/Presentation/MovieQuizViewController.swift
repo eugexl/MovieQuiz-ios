@@ -4,9 +4,18 @@
 
 import UIKit
 
+// MARK: - MovieQuizViewController Class Protocol
+protocol MovieQuizViewControllerProtocol: AnyObject {
+    
+    func show(quizStep model: QuizStepViewModel)
+    func show(alert model: AlertModel)
+    func toggleButtons(to state: Bool)
+    func highlightImageBorder(isCorrectAnswer: Bool)
+    func showLoadingIndicator(is state: Bool)
+}
+
 // MARK: - MovieQuizViewController Class
-///
-final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
+final class MovieQuizViewController: UIViewController {
     
     // MARK: - Properties
     
@@ -20,9 +29,9 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
     /// Презентер из MVP
-    private var presenter: MovieQuizPresenter?
+    private var presenter: MovieQuizPresenterProtocol?
     /// Фабрика уведомлений
-    internal var alertPresenter: AlertPresenterProtocol?
+    private var alertPresenter: AlertPresenterProtocol?
     
     // Окрашиваем статусную панель в светлые тона
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -30,6 +39,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     }
     
     // MARK: - Lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -55,7 +65,30 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         presenter?.didAnswer(isYes: true)
     }
     
-    // MARK: - Functions
+    // MARK: - Private methods
+    
+    /// Настраиваем первоначальные параметры представления
+    private func someMakeup(){
+        
+        questionTitleLabel.font = UIFont(name: "YSDisplay-Medium", size: 20)
+        questionIndexLabel.font = UIFont(name: "YSDisplay-Medium", size: 20)
+        questionLabel.font = UIFont(name: "YSDisplay-Bold", size: 23)
+        noButton.titleLabel?.font = UIFont(name: "YSDisplay-Medium", size: 20)
+        yesButton.titleLabel?.font = UIFont(name: "YSDisplay-Medium", size: 20)
+        
+        mainImageView.layer.masksToBounds = true
+        
+        // В соответствии с Figma-моделью
+        mainImageView.layer.borderWidth = 8
+        mainImageView.layer.cornerRadius = 20
+        
+        activityIndicator.hidesWhenStopped = true
+    }
+}
+
+// MARK: - MovieQuizViewControllerProtocol Methods
+
+extension MovieQuizViewController: MovieQuizViewControllerProtocol {
     
     /// Смена декораций представления/view
     ///  - Parameters:
@@ -82,40 +115,21 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         alertPresenter?.alert(with: model)
     }
     
-    /// Настраиваем первоначальные параметры представления
-    internal func someMakeup(){
-        
-        // У меня Xcode (14.3) не отображает установленные шрифты в списке шрифтов. Перепробовал всё, что рекомендовалось, поэтому ...
-        questionTitleLabel.font = UIFont(name: "YSDisplay-Medium", size: 20)
-        questionIndexLabel.font = UIFont(name: "YSDisplay-Medium", size: 20)
-        questionLabel.font = UIFont(name: "YSDisplay-Bold", size: 23)
-        noButton.titleLabel?.font = UIFont(name: "YSDisplay-Medium", size: 20)
-        yesButton.titleLabel?.font = UIFont(name: "YSDisplay-Medium", size: 20)
-        
-        mainImageView.layer.masksToBounds = true
-        
-        // В соответствии с Figma-моделью
-        mainImageView.layer.borderWidth = 8
-        mainImageView.layer.cornerRadius = 20
-        
-        activityIndicator.hidesWhenStopped = true
-    }
-    
     /// Метод включающий/выключающий кнопки ответов
     ///  - Parameters:
     ///     - to: Состояние в которое переводится свойство кнопок isEnabled, true - включаем кнопки, false - отключаем
-    internal func toggleButtons(to state: Bool){
+    func toggleButtons(to state: Bool){
         noButton.isEnabled = state
         yesButton.isEnabled = state
     }
     
     /// Окрашиваем цвет рамки изображения в зависимости от верности ответа
-    internal func highlightImageBorder(isCorrectAnswer: Bool) {
+    func highlightImageBorder(isCorrectAnswer: Bool) {
         mainImageView.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
     }
     
     /// Прячем/отображаем индикатор активности
-   internal func showLoadingIndicator(is state: Bool){
+   func showLoadingIndicator(is state: Bool){
         if state {
             activityIndicator.startAnimating()
         } else {
@@ -124,16 +138,4 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
             }
         }
     }
-}
-
-protocol MovieQuizViewControllerProtocol: AnyObject {
-    
-    func show(quizStep model: QuizStepViewModel)
-    func show(alert model: AlertModel)
-    
-    func someMakeup()
-    
-    func toggleButtons(to state: Bool)
-    func highlightImageBorder(isCorrectAnswer: Bool)
-    func showLoadingIndicator(is state: Bool)
 }

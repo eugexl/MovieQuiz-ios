@@ -7,14 +7,18 @@
 
 import UIKit
 
+// MARK: - AlertPresenterProtocol
+protocol AlertPresenterProtocol {
+    var delegate: MovieQuizViewController? { get }
+    func alert(with model: AlertModel)
+}
+
 // MARK: - AlertPresenter Class
 /// Presents Alert View
 final class AlertPresenter: AlertPresenterProtocol {
     
-//    weak var delegate: AlertPresenterDelegate?
     weak var delegate: MovieQuizViewController?
     
-//    init(delegate: AlertPresenterDelegate?) {
     init(delegate: MovieQuizViewController) {
         self.delegate = delegate
     }
@@ -32,16 +36,4 @@ final class AlertPresenter: AlertPresenterProtocol {
         delegate?.present(alert, animated: true)
     }
 }
-
-// MARK: - AlertPresenterProtocol
-protocol AlertPresenterProtocol {
-//    var delegate: AlertPresenterDelegate? { get }
-    var delegate: MovieQuizViewController? { get }
-    func alert(with model: AlertModel)
-}
-
-// MARK: - AlertPresenterDelegate
-//protocol AlertPresenterDelegate: UIViewController {
-//    func startNewQuiz(_: UIAlertAction)
-//}
 

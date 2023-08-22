@@ -36,14 +36,14 @@ final class MovieQuizUITests: XCTestCase {
     }
     
     func testYesButton(){
-        sleep(3)
+        sleep(4)
         
         // Getting first image png-representation
         let firstPosterData = app.images["Poster"].screenshot().pngRepresentation
         
         app.buttons["Yes"].tap()
         
-        sleep(3)
+        sleep(4)
         
         // Getting second image png-representation
         let secondPosterData = app.images["Poster"].screenshot().pngRepresentation
@@ -69,7 +69,7 @@ final class MovieQuizUITests: XCTestCase {
 
         sleep(2)
 
-        let button = app.buttons["Да"]
+        let button = app.buttons["Yes"]
 
         let ifAlertExists = app.alerts.firstMatch.exists
 
@@ -95,7 +95,7 @@ final class MovieQuizUITests: XCTestCase {
     func testNextQuiz() {
         sleep(2)
         
-        let button = app.buttons["Да"]
+        let button = app.buttons["Yes"]
         
         for _ in 0...9 {
             

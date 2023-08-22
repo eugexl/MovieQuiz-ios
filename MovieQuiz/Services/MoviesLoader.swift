@@ -28,12 +28,14 @@ struct MoviesLoader: MoviesLoaderProtocol {
         return url
     }
     
+    /// Запрашиваем данные с сервера JSON-формате,  декодируем, передаём замыканию
     func loadMovies(handler: @escaping (Result<MostPopularMovies, Error>) -> Void) {
         
         networkClient.fetch(url: mostPopularMoviesURL) { result in
             switch result {
                 
             case .success(let data):
+                
                 do {
                     
                     let moviesHeap = try JSONDecoder().decode(MostPopularMovies.self, from: data)
@@ -44,6 +46,7 @@ struct MoviesLoader: MoviesLoaderProtocol {
                         throw NetworkClient.NetworkError.noData
                     }
                     handler(.success(moviesHeap))
+                    
                 } catch {
                     handler(.failure(error))
                 }
